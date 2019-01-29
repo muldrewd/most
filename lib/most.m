@@ -1128,7 +1128,23 @@ if mpopt.most.build_model
       end
     end
   end
-  
+  % Add dcline if field in mpc. The fun_userfcn function is used to
+  % add the linear constraints. The args field in formulation is used to
+  % pass vs and mpc.
+  % dclinecost is not implemented yet.
+  if isfield(mpc, 'dcline')
+      om.init_indexed_name('lin', 'dcline', {nt, nj_max, nc_max+1});
+      for t = 1:nt
+          for j = 1:mdi.idx.nj(t)
+            for k = 1:mdi.idx.nc(t)+1
+              vs = struct('name', {'Pg'}, 'idx', {{t,j,k}});
+              mdi.flow(t,j,k).mpc.userfcn.formulation.args.vs = vs;
+              mdi.flow(t,j,k).mpc.userfcn.formulation.args.mpc = mdi.flow(t,j,k).mpc;
+              om = run_userfcn(mdi.flow(t,j,k).mpc.userfcn,'formulation', om);
+            end
+          end
+      end
+  end
   % Go on to load following ramping restrictions.  Note that these
   % restrictions apply even if there is a change in the commitment status
   % of the generator.
